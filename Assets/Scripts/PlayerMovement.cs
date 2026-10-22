@@ -21,7 +21,12 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 movimiento = new Vector3(x, 0, z);
 
-        transform.Translate(movimiento * velocidad * Time.deltaTime);
+        transform.Translate(movimiento * velocidad * Time.deltaTime, Space.World);
+        
+        if (movimiento != Vector3.zero)
+        {
+            transform.forward = movimiento.normalized;
+        }
 
         if (Input.GetKeyDown(KeyCode.Space) && groundCheck.estaEnSuelo)
         {
