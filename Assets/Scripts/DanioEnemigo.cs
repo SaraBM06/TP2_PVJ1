@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class DañoEnemigo : MonoBehaviour
+public class DanioEnemigo : MonoBehaviour
 {
     public float danio = 10f;
     public float tiempoEntreGolpes = 1f;
