@@ -7,7 +7,7 @@ public class Puerta : MonoBehaviour
     public void Interactuar()
     {
         abierta = !abierta;
-        transform.position += abierta ? Vector3.up * 3f : Vector3.down * 3f;
+        transform.position += abierta ? Vector3.up * 1.5f : Vector3.down * 1.5f;
         Debug.Log("Puerta " + (abierta ? "abierta" : "cerrada"));
     }
 }

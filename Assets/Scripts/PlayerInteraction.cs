@@ -8,6 +8,7 @@ public class PlayerInteraction : MonoBehaviour
     
     void Update()
     {
+        if (GameManager.Instance != null && GameManager.Instance.estado != EstadoJuego.Playing) return;
         Debug.DrawRay(transform.position, transform.forward * distanciaInteraccion, Color.yellow);
 
         if (Input.GetKeyDown(KeyCode.E))

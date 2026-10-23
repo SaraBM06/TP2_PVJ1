@@ -1,18 +1,24 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public enum EstadoJuego { Start, Playing, Paused, Victory, GameOver }
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
+    public static event System.Action<EstadoJuego> OnEstadoCambiado;
 
     public EstadoJuego estado { get; private set; }
     public float vidaMaxima = 100f;
     public float vida;
     public int puntaje;
+    public bool jugadorInvisible { get; private set; }
 
     private int ultimaVidaLog;
+    private Renderer rendererJugador;
+    private Color colorOriginal;
+    private Coroutine rutinaInvisibilidad;
 
     void Awake()
     {
@@ -25,6 +31,12 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        GameObject p = GameObject.FindGameObjectWithTag("Player");
+        if (p != null)
+        {
+            rendererJugador = p.GetComponent<Renderer>();
+            if (rendererJugador != null) colorOriginal = rendererJugador.material.color;
+        }
         CambiarEstado(EstadoJuego.Playing);
     }
 
@@ -47,6 +59,7 @@ public class GameManager : MonoBehaviour
         estado = nuevo;
         Time.timeScale = (nuevo == EstadoJuego.Playing || nuevo == EstadoJuego.Start) ? 1f : 0f;
         Debug.Log("GameManager: estado = " + nuevo + " | Vida: " + Mathf.CeilToInt(vida) + " | Puntaje: " + puntaje);
+        OnEstadoCambiado?.Invoke(nuevo);
     }
 
     public void RecibirDanio(float cantidad)
@@ -77,21 +90,63 @@ public class GameManager : MonoBehaviour
         if (estado == EstadoJuego.Playing) CambiarEstado(EstadoJuego.Victory);
     }
 
-        void OnGUI(){
-        GUIStyle estiloTexto = new GUIStyle();
-        estiloTexto.fontSize = 24;                 
-        estiloTexto.normal.textColor = Color.white; 
-        estiloTexto.fontStyle = FontStyle.Bold;    
+    public void ActivarInvisibilidad(float duracion)
+    {
+        if (rutinaInvisibilidad != null) StopCoroutine(rutinaInvisibilidad);
+        rutinaInvisibilidad = StartCoroutine(RutinaInvisibilidad(duracion));
+    }
 
-        GUI.Label(new Rect(10, 10, 600, 40), "Vida: " + Mathf.CeilToInt(vida) + "   Puntaje: " + puntaje + "   Estado: " + estado, estiloTexto);
-        
-        if (estado == EstadoJuego.Paused) 
-            GUI.Label(new Rect(10, 50, 500, 40), "PAUSA (Esc o P para seguir)", estiloTexto);
-        
-        if (estado == EstadoJuego.Victory) 
-            GUI.Label(new Rect(10, 50, 500, 40), "VICTORIA (R para reiniciar)", estiloTexto);
-        
-        if (estado == EstadoJuego.GameOver) 
-            GUI.Label(new Rect(10, 50, 500, 40), "DERROTA (R para reiniciar)", estiloTexto);
+    IEnumerator RutinaInvisibilidad(float duracion)
+    {
+        jugadorInvisible = true;
+        if (rendererJugador != null) rendererJugador.material.color = Color.cyan;
+        Debug.Log("GameManager: invisibilidad ACTIVADA por " + duracion + " s");
+
+        yield return new WaitForSeconds(duracion);
+
+        jugadorInvisible = false;
+        if (rendererJugador != null) rendererJugador.material.color = colorOriginal;
+        Debug.Log("GameManager: invisibilidad terminada");
+    }
+
+    void OnGUI()
+    {
+        // ---- HUD arriba a la izquierda (negro) ----
+        GUIStyle hud = new GUIStyle(GUI.skin.label);
+        hud.fontSize = 24;
+        hud.fontStyle = FontStyle.Bold;
+        hud.normal.textColor = Color.black;
+
+        GUI.Label(new Rect(10, 10, 800, 35),
+            "Vida: " + Mathf.CeilToInt(vida) + "   Puntaje: " + puntaje + "   Estado: " + estado, hud);
+
+        if (jugadorInvisible)
+            GUI.Label(new Rect(10, 45, 400, 35), "INVISIBLE", hud);
+
+        // ---- Cartel central (negro) ----
+        string texto = "";
+        string ayuda = "R para reiniciar";
+
+        if (estado == EstadoJuego.Victory) texto = "¡VICTORIA!";
+        else if (estado == EstadoJuego.GameOver) texto = "DERROTA";
+        else if (estado == EstadoJuego.Paused) { texto = "PAUSA"; ayuda = "Esc o P para continuar"; }
+
+        if (texto != "")
+        {
+            GUIStyle grande = new GUIStyle(GUI.skin.label);
+            grande.alignment = TextAnchor.MiddleCenter;
+            grande.fontSize = 60;
+            grande.fontStyle = FontStyle.Bold;
+            grande.normal.textColor = Color.black;
+
+            GUIStyle chico = new GUIStyle(GUI.skin.label);
+            chico.alignment = TextAnchor.MiddleCenter;
+            chico.fontSize = 24;
+            chico.fontStyle = FontStyle.Bold;
+            chico.normal.textColor = Color.black;
+
+            GUI.Label(new Rect(0, Screen.height / 2f - 60, Screen.width, 120), texto, grande);
+            GUI.Label(new Rect(0, Screen.height / 2f + 40, Screen.width, 40), ayuda, chico);
+        }
     }
 }
