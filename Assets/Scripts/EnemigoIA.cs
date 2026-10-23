@@ -32,17 +32,19 @@ public class EnemigoIA : MonoBehaviour
     {
         if (!agente.isOnNavMesh) return;
 
+        bool invisible = GameManager.Instance != null && GameManager.Instance.jugadorInvisible;
+
         if (jugador != null)
         {
             float distancia = Vector3.Distance(transform.position, jugador.position);
 
-            if (!persiguiendo && distancia <= radioDeteccion)
+            if (!persiguiendo && !invisible && distancia <= radioDeteccion)
             {
                 persiguiendo = true;
                 agente.speed = velocidadPersecucion;
                 Debug.Log(name + ": jugador detectado, persiguiendo");
             }
-            else if (persiguiendo && distancia > radioPerdida)
+            else if (persiguiendo && (invisible || distancia > radioPerdida))
             {
                 persiguiendo = false;
                 agente.speed = velocidadPatrulla;
@@ -55,9 +57,8 @@ public class EnemigoIA : MonoBehaviour
         {
             agente.SetDestination(jugador.position);
         }
-        else 
+        else
         {
-            // CORRECCIÓN: Si no hay puntos asignados, no intentamos patrullar para evitar errores continuos
             if (puntosPatrulla == null || puntosPatrulla.Length == 0) return;
 
             if (!agente.pathPending && agente.remainingDistance <= distanciaLlegada)
@@ -82,7 +83,6 @@ public class EnemigoIA : MonoBehaviour
         Vector3 destino = punto.position;
 
         NavMeshHit hit;
-        // Intenta buscar la posición válida del NavMesh más cercana en un radio de 5 metros
         if (NavMesh.SamplePosition(destino, out hit, 5f, NavMesh.AllAreas))
         {
             destino = hit.position;
